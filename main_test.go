@@ -173,7 +173,33 @@ func Test_writeSourceCodeStr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := writeSourceCodeStr(tt.args.name, tt.args.address, tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("writeSourceCode() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("writeSourceCode() error = %v, expect %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestExits(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+		expect   bool
+	}{
+		{
+			name:     "exits",
+			filename: "BNB",
+			expect:   true,
+		},
+		{
+			name:     "notExits",
+			filename: "HELLO",
+			expect:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if b := exits(tt.filename); b != tt.expect {
+				t.Errorf("writeSourceCode() result = %v, expect %v", b, tt.expect)
 			}
 		})
 	}
