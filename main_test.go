@@ -1,6 +1,9 @@
 package main
 
 import (
+	"github.com/stretchr/testify/assert"
+	"log"
+	"os"
 	"testing"
 )
 
@@ -179,28 +182,23 @@ func Test_writeSourceCodeStr(t *testing.T) {
 	}
 }
 
-func TestExits(t *testing.T) {
-	tests := []struct {
-		name     string
-		filename string
-		expect   bool
-	}{
-		{
-			name:     "exits",
-			filename: "BNB",
-			expect:   true,
-		},
-		{
-			name:     "notExits",
-			filename: "HELLO",
-			expect:   false,
-		},
+func TestGetContractAddress(t *testing.T) {
+	address := getContractAddress()
+	assert.True(t, len(address) > 0)
+	for k, v := range address {
+		log.Printf("key=%s, value=%s\n", k, v)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if b := exits(tt.filename); b != tt.expect {
-				t.Errorf("writeSourceCode() result = %v, expect %v", b, tt.expect)
-			}
-		})
-	}
+}
+
+func TestWriteMulFile(t *testing.T) {
+	open, err := os.Open("Aave.sol")
+	assert.NoError(t, err)
+	defer open.Close()
+	fileInfo, err := open.Stat()
+	assert.NoError(t, err)
+	bytes := make([]byte, fileInfo.Size())
+	_, err = open.Read(bytes)
+	assert.NoError(t, err)
+	err = writeSourceCodeStr("Aave", "", string(bytes))
+	assert.NoError(t, err)
 }
