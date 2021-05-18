@@ -17,6 +17,7 @@ import (
 func main() {
 	client := getClient()
 	for name, address := range getContractAddress() {
+		log.Printf("name=%s, address=%s start get source code\n", name, address)
 		if util.Exits(util.GetCoinDir(name)) {
 			log.Printf("name=%s, address=%s source code exits\n", name, address)
 			continue

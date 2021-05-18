@@ -80,6 +80,7 @@ library SafeMath {
     }
 
     /**
+     * 返回两个无符号整数的的乘积，如果溢出则回滚
      * @dev Returns the multiplication of two unsigned integers, reverting on overflow.
      *
      * Counterpart to Solidity's `*` operator.
@@ -133,6 +134,7 @@ library SafeMath {
      *
      * Requirements:
      * - The divisor cannot be zero.
+     * b必须大于0
      */
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         return div(a, b, "SafeMath: division by zero");
@@ -203,13 +205,13 @@ contract Uni {
     /// @notice Total number of tokens in circulation
     uint public totalSupply = 1_000_000_000e18; // 1 billion Uni
 
-    /// @notice Address which may mint new tokens
+    /// @notice Address which may mint new tokens；铸币地址
     address public minter;
 
-    /// @notice The timestamp after which minting may occur
+    /// @notice The timestamp after which minting may occur；
     uint public mintingAllowedAfter;
 
-    /// @notice Minimum time between mints
+    /// @notice Minimum time between mints；两次铸币之间的最小时间间隔
     uint32 public constant minimumTimeBetweenMints = 1 days * 365;
 
     /// @notice Cap on the percentage of totalSupply that can be minted at each mint
@@ -221,7 +223,7 @@ contract Uni {
     /// @notice Official record of token balances for each account
     mapping (address => uint96) internal balances;
 
-    /// @notice A record of each accounts delegate
+    /// @notice A record of each accounts delegate；
     mapping (address => address) public delegates;
 
     /// @notice A checkpoint for marking number of votes from a given block
@@ -280,6 +282,7 @@ contract Uni {
     }
 
     /**
+     * 设置（更改）铸造者，只有当前的铸造者能够设置
      * @notice Change the minter address
      * @param minter_ The address of the new minter
      */
@@ -302,8 +305,9 @@ contract Uni {
         // record the mint
         mintingAllowedAfter = SafeMath.add(block.timestamp, minimumTimeBetweenMints);
 
-        // mint the amount
+        // mint the amount；铸造的币的数量不能超过2的96次方
         uint96 amount = safe96(rawAmount, "Uni::mint: amount exceeds 96 bits");
+        // amount <= totalSupply * 2 / 100；即每次铸造不能超过当前总发行量的2%
         require(amount <= SafeMath.div(SafeMath.mul(totalSupply, mintCap), 100), "Uni::mint: exceeded mint cap");
         totalSupply = safe96(SafeMath.add(totalSupply, amount), "Uni::mint: totalSupply exceeds 96 bits");
 
@@ -348,6 +352,7 @@ contract Uni {
     }
 
     /**
+     * 许可
      * @notice Triggers an approval from owner to spends
      * @param owner The address to approve from
      * @param spender The address to be approved
@@ -370,6 +375,7 @@ contract Uni {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "Uni::permit: invalid signature");
+        // 签名者必须是owner
         require(signatory == owner, "Uni::permit: unauthorized");
         require(now <= deadline, "Uni::permit: signature expired");
 
@@ -410,14 +416,15 @@ contract Uni {
         address spender = msg.sender;
         uint96 spenderAllowance = allowances[src][spender];
         uint96 amount = safe96(rawAmount, "Uni::approve: amount exceeds 96 bits");
-
+        // 如果spender不等于src，并且授权的金额不等于-1
         if (spender != src && spenderAllowance != uint96(-1)) {
+            // 减少授权的金额
             uint96 newAllowance = sub96(spenderAllowance, amount, "Uni::transferFrom: transfer amount exceeds spender allowance");
             allowances[src][spender] = newAllowance;
 
             emit Approval(src, spender, newAllowance);
         }
-
+        // 转账
         _transferTokens(src, dst, amount);
         return true;
     }
